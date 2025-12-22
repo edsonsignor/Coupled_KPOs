@@ -1,0 +1,53 @@
+# ======================
+# OS / Editor
+# ======================
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/settings.json
+
+# ======================
+# Python
+# ======================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+env/
+venv/
+pip-wheel-metadata/
+
+# ======================
+# Jupyter
+# ======================
+.ipynb_checkpoints/
+
+# ======================
+# Julia
+# ======================
+Manifest.toml
+*.jl.cov
+*.jl.mem
+*.jl.*.cov
+.deps/
+*.so
+*.dylib
+*.dll
+
+# ======================
+# Data / results
+# ======================
+data/
+results/
+*.h5
+*.hdf5
+*.npz
+*.npy
+*.mat
+
+# ======================
+# Temporary / backups
+# ======================
+*~
+*.swp
