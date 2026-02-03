@@ -1,14 +1,12 @@
 module Coupled_KPOs_QTB_functions
     using LinearAlgebra
-    using PyPlot
-    using PyCall
     using BenchmarkTools
     using LaTeXStrings
     using QuantumToolbox, NLsolve
     export H_full ,Parity_matrices, Coupled_kerr, H_un,  Coupled_kerr_equiv, Q_function_grid_q1q2_full, Q_function_grid_q1p1_full,
             Q_function_grid_q2p2_full, Q_function_grid_p1p2_full, parities, total_fock, Convergency_test,
             Q_function_grid_q1q2_full_ρ, Q_function_grid_q1p1_full_ρ, Q_function_grid_q2p2_full_ρ, Q_function_grid_p1p2_full_ρ,
-            labels_states_KPOs, crit_energies, H_class, Jacobian_qp, EqM_2, classify_fixed_point
+            labels_states_KPOs, crit_energies, H_class, Jacobian_qp, EqM_2, classify_fixed_point,z_and_s, unfold
 
     function Parity_matrices(basis)
             size_b = size(basis)[1]
@@ -509,6 +507,54 @@ module Coupled_KPOs_QTB_functions
 
         end
         return matrix
+    end
+
+    function unfold(s, λ)
+        """
+            Unfolds the nearest neighbor spacings `s` using local density of states from eigenvalues `λ`.
+            Local variable:
+                - `n`: Number of neighbors to consider for local density of states calculation.
+            Inputs:
+                - `s`: Array of nearest neighbor spacings (magnitudes).
+                - `λ`: Array of complex eigenvalues.
+            Outputs:
+                - Unfolded spacings as an array.
+        """
+        N̄ = length(s)
+        v_a = zeros(N̄)
+        n = 10
+        for k in 1:N̄
+            nbs = abs.(λ .- λ[k])  # Vectorized computation
+            sort!(nbs)
+            d_n = nbs[n+1]
+            v_a[k] = n / (π * d_n^2)
+        end
+        return s .* sqrt.(v_a)
+    end
+
+    
+    function z_and_s(λ)
+        """
+            Calculates the nearest neighbor spacings `s` and the ratio of next two spacings `z` for a set of complex eigenvalues `λ`.
+            Inputs: 
+                - `λ`: Array of complex eigenvalues.
+            Outputs:
+                - `s`: Array of nearest neighbor spacings (magnitudes).
+                - `z`: Array of ratios of next two spacings (complex).
+        """
+        N̄ = length(λ)
+        s = zeros(N̄)
+        z = zeros(Complex{Float64}, N̄)
+        for k in 1:N̄
+            # Compute complex neighbor distances
+            nbs = λ .- λ[k]  # Keep complex values
+            sorted_indices = sortperm(abs.(nbs))  # Sort by absolute distance
+            nbs = nbs[sorted_indices]
+
+            s[k] = abs(nbs[2])  # Nearest neighbor spacing (magnitude)
+            z[k] = nbs[2] / nbs[3]  # Ratio of next two spacings (complex)
+        end
+        return s, z
     end
 
     
