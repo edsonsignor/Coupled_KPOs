@@ -7,7 +7,7 @@ module Coupled_KPOs_QTB_functions
             Q_function_grid_q2p2_full, Q_function_grid_p1p2_full, parities, total_fock, Convergency_test, H_un,
             Q_function_grid_q1q2_full_ρ, Q_function_grid_q1p1_full_ρ, Q_function_grid_q2p2_full_ρ, Q_function_grid_p1p2_full_ρ,
             labels_states_KPOs, crit_energies, H_class, Jacobian_qp, EqM_2, classify_fixed_point, Q_function_full,
-            Wehrl_entropy_q1q2, Wehrl_entropy
+            Wehrl_entropy_q1q2, Wehrl_entropy,Entanglement_entropy_fock
 
     function Parity_matrices(basis)
             size_b = size(basis)[1]
@@ -514,6 +514,29 @@ module Coupled_KPOs_QTB_functions
         Q = Q[Q .> 1e-14];
         return -sum((Q .* log.(Q)))*Δq1*Δp1*Δq2*Δp2
     end
+
+    function Entanglement_entropy_fock(ψ, N,ismixed = false)
+        if ismixed
+            ρ_A = zeros(N,N)
+            for i in 0:N-1
+                for j in 0:N-1
+                    for k in 0:N-1
+                        el1 = (i*N+1) + k
+                        el2 = (j*N+1) + k
+                        ρ_A[i+1,j+1] += ψ[el1] * (ψ[el2]') 
+                    end
+                end
+            end
+        else
+            ψ_r = reshape(ψ, N, N)
+            ρ_A = ψ_r * ψ_r' 
+        end
+        λ, v = eigen(ρ_A, sortby=real)
+        λ = abs.(λ) 
+        λ = λ[λ .> 1e-14];
+        return -sum(λ .* log.(λ))
+    end
+
     
 
     
