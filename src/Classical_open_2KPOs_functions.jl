@@ -238,6 +238,9 @@ module Classical_open_KPOs
             #Defining the matrix for ICs vectors
             G = Matrix{Float64}(I, 4, 4)
             λ = zeros(4)
+            λ1 = zeros(4)
+            λ_t = zeros(N)
+
             
             for i in 1:Int(N)
                 x = traj[i]
@@ -254,6 +257,8 @@ module Classical_open_KPOs
                 if i*Δt > 100
                     λ += log.((diag(R)))
                 end
+                λ1 += log.((diag(R)))
+                λ_t[i] = maximum(λ1)/(i*Δt)
                 
             end
         end
@@ -262,7 +267,7 @@ module Classical_open_KPOs
         λ = λ/(T)
 
         λ_max = maximum(λ)
-        return λ_max
+        return λ_max, λ_t
     end
 
         

@@ -9,7 +9,7 @@ module Classical_KPOs
 
     export H_class, EqM!, Jacobian_qp, GS, G_evolution!, Lyapunov_max, p1_sq, generate_initial_conditions, 
             generate_initial_conditions_p2_0, generate_initial_conditions_q2_0, crit_energies, poincare_sos, Lyapunov_max_Poincare, Poincare_Lyapunov,
-            classify_fixed_point, countor_energy, Weighted_initial_conditions, dHdp2, real_p2_roots, crit_energies2,
+            classify_fixed_point, countor_energy, Initial_conditions, dHdp2, real_p2_roots, crit_energies2,
             p2_polynomial_coeffs
 
 
@@ -197,6 +197,8 @@ module Classical_KPOs
             #Defining the matrix for ICs vectors
             G = Matrix{Float64}(I, 4, 4)
             λ = zeros(4)
+            λ1 = zeros(4)
+            λ_t = zeros(N)
             
             for i in 1:Int(N)
                 x = traj[i]
@@ -213,6 +215,8 @@ module Classical_KPOs
                 if i*Δt > 100
                     λ += log.((diag(R)))
                 end
+                λ1 += log.((diag(R)))
+                λ_t[i] = maximum(λ1)/(i*Δt)
                 
             end
         end
@@ -221,7 +225,7 @@ module Classical_KPOs
         λ = λ/(T)
 
         λ_max = maximum(λ)
-        return λ_max
+        return λ_max, λ_t
     end
 
     function p1_sq(E, q_1, q_2, parameters)
@@ -652,19 +656,9 @@ module Classical_KPOs
         return realr
     end
 
-    
-    function dHdp2(q1, p1, q2, p2, params)
-        """
-            analytic derivative ∂H/∂p2 (evaluated numerically)
-        """
-        δ1, K1, ξ11, ξ21, δ2, K2, ξ12, ξ22, γ = params
-        return p2 * (-δ2 + 2*ξ22 + K2*(q2^2 + p2^2)) - γ*p1
-    end
-
-    function Weighted_initial_conditions(E, params, q_l, q_r; min_ics=100, max_attempts=1_000_000, min_abs_dHdp2 = 1e-6)
+    function Initial_conditions(E, params, q_l, q_r; min_ics=100, max_attempts=1_000_000)
     
         initial_conditions = Vector{Vector{Float64}}()
-        weights = Vector{Float64}()
         timeout_seconds = 3
         attempts = 0
         start_time = now()
@@ -684,35 +678,19 @@ module Classical_KPOs
             q1, p1, q2 = rand(rng, Uniform(q_l, q_r)), rand(rng, Uniform(q_l, q_r)), rand(rng, Uniform(q_l, q_r))
 
             p2s = real_p2_roots(q1,p1,q2,E,params)
+
             if isempty(p2s)
                 continue
             end
             
             for p2 in p2s
-                d = abs(dHdp2(q1, p1, q2, p2, params))
-                if !isfinite(d) || abs(d) < min_abs_dHdp2
-                    # skipping near-turning points (avoid huge weights)
-                    continue
-                end
-                ω = 1/d
-                push!(weights, ω)
                 push!(initial_conditions, [q1, p1, q2, p2])
             end
-            #=
-            try
-                p2s = real_p2_roots(q1, p1, q2, E, params; imag_tol=1e-6)
-                for p2 in p2s
-                    push!(initial_conditions, [q1, p1, q2, p2])
-                end
-            catch
-                # Skip if Roots fails
-            end
-            =#
             
             attempts += 1
         end
         #println("Generated ", length(initial_conditions), " valid ICs in ", attempts, " attempts.")
-        return initial_conditions, weights
+        return initial_conditions
     end
 
     function crit_energies2(parameters,n_g,x_g)
